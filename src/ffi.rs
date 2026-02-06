@@ -1,5 +1,14 @@
+//! Raw C FFI types and function signatures (for `librknnmrt.so` obviously).
+//!
+//! This module contains the low-level `#[repr(C)]` structs and function pointer
+//! types that mirror the RKNN C API. You normally don't need to use these
+//! directly - [`RknnModel`](crate::RknnModel) wraps everything for you.
+//!
+//! These are exposed as `pub` in case you want to do something the high-level that API doesn't support yet.
+
 use std::ffi::c_void;
 
+/// Raw RKNN context handle (an opaque u32 ID used by the C API).
 pub type RknnContext = u32;
 
 // Query commands
