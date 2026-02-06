@@ -1,0 +1,23 @@
+[package]
+name = "rknn-runtime"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.85"
+description = "Rust bindings for RKNN NPU inference on Rockchip SoCs (RV1106, RK3588, etc.)"
+license = "MIT"
+repository = "https://github.com/LdDl/rknn-runtime"
+readme = "README.md"
+keywords = ["rknn", "npu", "rv1106", "inference", "rockchip"]
+categories = ["hardware-support", "api-bindings"]
+exclude = ["examples/coco_test/cat.jpg"]
+
+[dependencies]
+libloading = { version = "0.8", optional = true }
+
+[dev-dependencies]
+image = "0.25"
+
+[features]
+default = ["dynamic"]
+dynamic = ["dep:libloading"]
+static-link = []
