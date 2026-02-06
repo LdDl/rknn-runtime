@@ -164,3 +164,7 @@ Should work on other Rockchip SoCs supported by RKNN Toolkit2 (RK3588, RK3566, R
 ## Example
 
 See [examples/coco_test](examples/coco_test/) for a complete YOLOv8 COCO object detection example that loads a model, runs inference, decodes NC1HWC2 output, and prints detected objects.
+
+## Misc
+
+Here is a way that I've followed to get a `.rknn` model from ONNX: https://github.com/LdDl/rv1106-yolov8
