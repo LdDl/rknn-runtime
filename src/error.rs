@@ -1,20 +1,61 @@
+//! Error types for RKNN operations.
+
 use std::fmt;
 
+/// Everything that can go wrong when using RKNN.
+///
+/// Most variants carry the RKNN error code (a negative `i32`).
+/// The RKNN SDK doesn't document specific codes, but common ones are:
+/// - `-1` - generic failure
+/// - `-2` - invalid parameter
+/// - `-3` - device not found
+///
+/// # Example
+///
+/// ```rust,no_run
+/// use rknn_runtime::{RknnModel, Error};
+///
+/// match RknnModel::load("model.rknn") {
+///     Ok(model) => println!("Loaded!"),
+///     Err(Error::LibraryNotFound(path)) => {
+///         eprintln!("RKNN library not found at: {}", path);
+///         eprintln!("Make sure librknnmrt.so is installed on the device.");
+///     }
+///     Err(e) => eprintln!("Error: {}", e),
+/// }
+/// ```
 #[derive(Debug)]
 pub enum Error {
+    /// `librknnmrt.so` could not be loaded. Contains the attempted path.
     LibraryNotFound(String),
+    /// A required function was not found in the loaded library.
     SymbolNotFound(String),
+    /// `rknn_init()` failed. The model file may be corrupt or incompatible.
     InitFailed(i32),
+    /// `rknn_query()` failed when reading tensor metadata.
     QueryFailed(i32),
+    /// `rknn_run()` failed during inference.
     InferenceFailed(i32),
+    /// NPU memory allocation returned null.
     MemAllocFailed,
+    /// `rknn_mem_sync()` failed. Cache sync between NPU and CPU did not complete.
     MemSyncFailed(i32),
+    /// `rknn_set_io_mem()` failed when binding a memory buffer to a tensor.
     SetIoMemFailed(i32),
+    /// The model data is empty or invalid.
     InvalidModel,
-    InvalidIndex { requested: usize, available: usize },
+    /// Output index is out of range.
+    InvalidIndex {
+        /// The index that was requested.
+        requested: usize,
+        /// How many outputs the model actually has.
+        available: usize,
+    },
+    /// File I/O error (e.g. model file not found).
     IoError(std::io::Error),
 }
 
+/// Just display the error message.
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
@@ -58,6 +99,7 @@ impl fmt::Display for Error {
     }
 }
 
+/// Allow chaining
 impl std::error::Error for Error {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match self {
@@ -67,6 +109,7 @@ impl std::error::Error for Error {
     }
 }
 
+/// Convert std::io::Error into crate's Error type.
 impl From<std::io::Error> for Error {
     fn from(e: std::io::Error) -> Self {
         Error::IoError(e)
