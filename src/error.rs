@@ -51,6 +51,13 @@ pub enum Error {
         /// How many outputs the model actually has.
         available: usize,
     },
+    /// Tensor format or shape does not match what was expected.
+    InvalidFormat {
+        /// What was expected (e.g. "NC1HWC2").
+        expected: &'static str,
+        /// What was actually found.
+        got: String,
+    },
     /// File I/O error (e.g. model file not found).
     IoError(std::io::Error),
 }
@@ -82,6 +89,9 @@ impl fmt::Display for Error {
             }
             Error::SetIoMemFailed(code) => {
                 write!(f, "rknn_set_io_mem failed (code {})", code)
+            }
+            Error::InvalidFormat { expected, got } => {
+                write!(f, "expected {} format, got {}", expected, got)
             }
             Error::InvalidModel => write!(f, "invalid or empty model data"),
             Error::InvalidIndex {

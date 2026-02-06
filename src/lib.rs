@@ -59,5 +59,6 @@ pub use error::Error;
 pub use inference::RknnModel;
 pub use tensor::{
     TensorAttr, TensorFormat, TensorType, QuantType,
+    Nc1hwc2Layout,
     dequantize_affine, nc1hwc2_to_flat,
 };

@@ -6,7 +6,7 @@
 use crate::context::RknnContext;
 use crate::error::Error;
 use crate::memory::ZeroCopyMem;
-use crate::tensor::{dequantize_affine, TensorAttr};
+use crate::tensor::{dequantize_affine, Nc1hwc2Layout, TensorAttr};
 
 const DEFAULT_LIB_PATH: &str = "/usr/lib/librknnmrt.so";
 
@@ -216,6 +216,26 @@ impl RknnModel {
             });
         }
         Ok(self.output_mems[index].as_i8_slice())
+    }
+
+    /// Precomputed NC1HWC2 layout for the given output index.
+    ///
+    /// Returns an [`Nc1hwc2Layout`] with all shape and quantization parameters
+    /// precomputed. Use this at model load time to prepare channel offset tables,
+    /// then use them in the per-image (frame of video, most of time) hot loop with zero division.
+    ///
+    /// # Errors
+    ///
+    /// - [`Error::InvalidIndex`] if `index` is out of range.
+    /// - [`Error::InvalidFormat`] if the output is not NC1HWC2.
+    pub fn output_nc1hwc2_layout(&self, index: usize) -> Result<Nc1hwc2Layout, Error> {
+        if index >= self.output_attrs.len() {
+            return Err(Error::InvalidIndex {
+                requested: index,
+                available: self.output_attrs.len(),
+            });
+        }
+        Nc1hwc2Layout::from_attr(&self.output_attrs[index])
     }
 
     /// Dequantized f32 output for the given output index.
