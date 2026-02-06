@@ -1,9 +1,12 @@
+// Low-level RKNN context: library loading, model init, attribute queries.
+// This is internal - users interact with `RknnModel` in inference.rs.
+
 use std::ffi::c_void;
 
 use crate::error::Error;
 use crate::ffi::*;
 
-/// Loaded function pointers (from librknnmrt.so)
+/// Function pointers resolved from librknnmrt.so (or linked statically).
 pub(crate) struct RknnFunctions {
     pub init: FnRknnInit,
     pub query: FnRknnQuery,
@@ -15,7 +18,10 @@ pub(crate) struct RknnFunctions {
     pub mem_sync: FnRknnMemSync,
 }
 
-/// Holds the RKNN context handle and loaded library functions.
+/// RKNN context: holds the NPU handle and resolved function pointers.
+///
+/// Created during `RknnModel::load()`. Destroyed on drop (calls `rknn_destroy`).
+/// The `_lib` field keeps the dynamically loaded library alive.
 pub(crate) struct RknnContext {
     pub ctx: crate::ffi::RknnContext,
     pub funcs: RknnFunctions,
@@ -24,7 +30,7 @@ pub(crate) struct RknnContext {
 }
 
 impl RknnContext {
-    /// Load the RKNN runtime library and initialize a model.
+    /// Load librknnmrt.so at runtime and init the model.
     #[cfg(feature = "dynamic")]
     pub fn load(model_data: &[u8], lib_path: &str) -> Result<Self, Error> {
         if model_data.is_empty() {
@@ -86,6 +92,7 @@ impl RknnContext {
         })
     }
 
+    /// Static-link variant: symbols resolved at compile time.
     #[cfg(feature = "static-link")]
     pub fn load(model_data: &[u8], _lib_path: &str) -> Result<Self, Error> {
         if model_data.is_empty() {
@@ -159,6 +166,7 @@ impl RknnContext {
         Ok(Self { ctx, funcs })
     }
 
+    /// Query how many inputs and outputs the model has.
     pub fn query_io_num(&self) -> Result<(u32, u32), Error> {
         let mut io_num = RknnInputOutputNum {
             n_input: 0,
@@ -178,6 +186,7 @@ impl RknnContext {
         Ok((io_num.n_input, io_num.n_output))
     }
 
+    /// Query input tensor attributes in NHWC layout (native for zero-copy input).
     pub fn query_input_attr_nhwc(&self, index: u32) -> Result<RknnTensorAttr, Error> {
         let mut attr = RknnTensorAttr::new();
         attr.index = index;
@@ -195,6 +204,7 @@ impl RknnContext {
         Ok(attr)
     }
 
+    /// Query output tensor attributes in NPU-native layout (NC1HWC2 on RV1106).
     pub fn query_output_attr_native(&self, index: u32) -> Result<RknnTensorAttr, Error> {
         let mut attr = RknnTensorAttr::new();
         attr.index = index;
